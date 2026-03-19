@@ -158,8 +158,6 @@ object ModelRegistry {
                     // text->text, text+image->text, etc.
                     modality.endsWith("->text") && model.contextLength > 0
                 }
-                // Filter out models with :free suffix (often rate-limited/degraded)
-                .filter { !it.id.endsWith(":free") }
                 // Filter out extended-thinking variants (not useful for chat)
                 .filter { !it.id.contains(":extended") }
                 .map { model ->

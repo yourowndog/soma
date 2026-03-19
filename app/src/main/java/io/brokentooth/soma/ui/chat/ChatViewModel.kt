@@ -37,8 +37,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val sessionDao = db.sessionDao()
     private val messageDao = db.messageDao()
 
-    // Default model used until dynamic list loads
-    private val defaultModel = ModelOption("gemini-2.0-flash", "Gemini 2.0 Flash", "gemini")
+    // Default model — free tier via OpenRouter so it always works
+    private val defaultModel = ModelOption("google/gemini-2.0-flash-exp:free", "Gemini 2.0 Flash (Free)", "openrouter")
 
     private val _availableModels = MutableStateFlow(listOf(defaultModel))
     val availableModels: StateFlow<List<ModelOption>> = _availableModels.asStateFlow()
