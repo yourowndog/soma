@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,9 +45,11 @@ import io.brokentooth.soma.ui.theme.SomaTextPrimary
 @Composable
 fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentModel by viewModel.currentModel.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     var inputText by remember { mutableStateOf("") }
-    
+    var showModelSelector by remember { mutableStateOf(false) }
+
     val density = LocalDensity.current
     val isKeyboardVisible = WindowInsets.ime.getBottom(density) > 0
 
@@ -56,11 +59,21 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     // Scroll to bottom whenever:
     // 1. A new message is added
     // 2. The assistant is streaming text
-    // 3. THE KEYBOARD OPENS
+    // 3. The keyboard opens
     LaunchedEffect(totalItems, uiState.isStreaming, isKeyboardVisible) {
         if (totalItems > 0) {
             listState.animateScrollToItem(totalItems - 1)
         }
+    }
+
+    // Model selector bottom sheet
+    if (showModelSelector) {
+        ModelSelectorSheet(
+            models = viewModel.availableModels,
+            currentModelId = currentModel.id,
+            onModelSelected = { viewModel.switchModel(it) },
+            onDismiss = { showModelSelector = false }
+        )
     }
 
     Scaffold(
@@ -77,7 +90,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                 },
                 actions = {
                     Text(
-                        text = "Gemini Flash",
+                        text = currentModel.displayName,
                         fontSize = 12.sp,
                         color = SomaTextMuted,
                         modifier = Modifier.padding(end = 16.dp)
@@ -99,9 +112,10 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                 },
                 onStop = { viewModel.stopStreaming() },
                 isStreaming = uiState.isStreaming,
+                onSlashModel = { showModelSelector = true },
                 modifier = Modifier
-                    .imePadding() // Pushes the input bar UP when keyboard appears
-                    .navigationBarsPadding() // Stays above the system navigation bar
+                    .imePadding()
+                    .navigationBarsPadding()
             )
         },
         containerColor = SomaBackground
@@ -122,7 +136,11 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(uiState.messages, key = { it.id }) { message ->
-                    MessageBubble(message = message)
+                    if (message.role == "system") {
+                        SystemMessage(text = message.content)
+                    } else {
+                        MessageBubble(message = message)
+                    }
                 }
 
                 // Streaming bubble — rendered live as tokens arrive
@@ -158,6 +176,19 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
             }
         }
     }
+}
+
+@Composable
+private fun SystemMessage(text: String) {
+    Text(
+        text = text,
+        color = SomaTextMuted,
+        fontSize = 12.sp,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    )
 }
 
 @Composable

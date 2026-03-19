@@ -1,4 +1,5 @@
-# Copy this file to local.properties and fill in your key.
+# Copy this file to local.properties and fill in your keys.
 # local.properties is gitignored — never commit real keys.
 sdk.dir=/path/to/your/android-sdk
-ANTHROPIC_API_KEY=sk-ant-YOUR_KEY_HERE
+GOOGLE_API_KEY=YOUR_GOOGLE_API_KEY_HERE
+OPENROUTER_API_KEY=YOUR_OPENROUTER_API_KEY_HERE

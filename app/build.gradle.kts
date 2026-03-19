@@ -27,6 +27,11 @@ android {
             "GOOGLE_API_KEY",
             "\"${props.getProperty("GOOGLE_API_KEY", "")}\""
         )
+        buildConfigField(
+            "String",
+            "OPENROUTER_API_KEY",
+            "\"${props.getProperty("OPENROUTER_API_KEY", "")}\""
+        )
     }
 
     buildTypes {

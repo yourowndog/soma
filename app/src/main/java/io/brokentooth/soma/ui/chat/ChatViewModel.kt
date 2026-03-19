@@ -5,10 +5,15 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.brokentooth.soma.BuildConfig
 import io.brokentooth.soma.SomaApplication
-import io.brokentooth.soma.agent.GeminiClient
 import io.brokentooth.soma.agent.ChatAgent
+import io.brokentooth.soma.agent.ChatMessage
+import io.brokentooth.soma.agent.GeminiClient
+import io.brokentooth.soma.agent.LlmProvider
+import io.brokentooth.soma.agent.ModelOption
+import io.brokentooth.soma.agent.OpenRouterClient
 import io.brokentooth.soma.data.model.Message
 import io.brokentooth.soma.data.model.Session
+import io.brokentooth.soma.tools.handleToolCalls
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,8 +35,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val db = SomaApplication.database
     private val sessionDao = db.sessionDao()
     private val messageDao = db.messageDao()
+
+    val availableModels = listOf(
+        ModelOption("gemini-flash", "Gemini Flash", "gemini"),
+        ModelOption("anthropic/claude-sonnet-4", "Claude Sonnet 4", "openrouter"),
+        ModelOption("deepseek/deepseek-r1", "DeepSeek R1", "openrouter"),
+    )
+
+    private val _currentModel = MutableStateFlow(availableModels.first())
+    val currentModel: StateFlow<ModelOption> = _currentModel.asStateFlow()
+
     private val agent = ChatAgent(
-        client = GeminiClient(BuildConfig.GOOGLE_API_KEY),
+        provider = createProvider(availableModels.first()),
         messageDao = messageDao
     )
 
@@ -43,6 +58,36 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch { initSession() }
+    }
+
+    // ── Model switching ──────────────────────────────────────────────────────
+
+    fun switchModel(model: ModelOption) {
+        if (model.id == _currentModel.value.id) return
+        _currentModel.value = model
+        agent.switchProvider(createProvider(model))
+
+        // Add a system message to the chat
+        viewModelScope.launch {
+            val sysMsg = Message(
+                sessionId = currentSessionId,
+                role = "system",
+                content = "Switched to ${model.displayName}"
+            )
+            messageDao.insert(sysMsg)
+            _uiState.update { it.copy(messages = it.messages + sysMsg) }
+        }
+    }
+
+    private fun createProvider(model: ModelOption): LlmProvider {
+        return when (model.provider) {
+            "gemini" -> GeminiClient(BuildConfig.GOOGLE_API_KEY)
+            "openrouter" -> OpenRouterClient(
+                apiKey = BuildConfig.OPENROUTER_API_KEY,
+                modelId = model.id
+            )
+            else -> throw IllegalArgumentException("Unknown provider: ${model.provider}")
+        }
     }
 
     // ── Session bootstrap ───────────────────────────────────────────────────
@@ -77,14 +122,26 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     _uiState.update { it.copy(streamingText = accum.toString()) }
                 }
 
-                commitAssistantMessage(accum.toString())
+                val responseText = accum.toString()
+                commitAssistantMessage(responseText)
+
+                // Check for tool calls in the response
+                val toolResult = handleToolCalls(getApplication(), responseText)
+                if (toolResult != null) {
+                    val toolMsg = Message(
+                        sessionId = currentSessionId,
+                        role = "system",
+                        content = toolResult
+                    )
+                    messageDao.insert(toolMsg)
+                    _uiState.update { it.copy(messages = it.messages + toolMsg) }
+                }
 
                 // Rename session after first exchange
                 if (_uiState.value.messages.size <= 2) {
                     sessionDao.updateTitle(currentSessionId, text.trim().take(50))
                 }
             } catch (e: Exception) {
-                // If we have partial content, save it rather than discard
                 if (accum.isNotEmpty()) commitAssistantMessage(accum.toString())
                 _uiState.update { it.copy(streamingText = null, isStreaming = false, error = e.message) }
             }

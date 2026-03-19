@@ -22,7 +22,8 @@ data class Part(val text: String)
 
 @Serializable
 private data class GeminiRequest(
-    val contents: List<Content>
+    val contents: List<Content>,
+    val systemInstruction: Content? = null
 )
 
 @Serializable
@@ -37,8 +38,9 @@ private data class Candidate(
 
 /**
  * Client for Google's Gemini API.
+ * Implements LlmProvider so it can be swapped with other providers.
  */
-class GeminiClient(private val apiKey: String) {
+class GeminiClient(private val apiKey: String) : LlmProvider {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val http = OkHttpClient.Builder()
@@ -46,11 +48,21 @@ class GeminiClient(private val apiKey: String) {
         .readTimeout(120, TimeUnit.SECONDS)
         .build()
 
-    fun streamMessages(messages: List<Content>): Flow<String> = flow {
-        val body = json.encodeToString(GeminiRequest(contents = messages))
+    override fun streamChat(messages: List<ChatMessage>): Flow<String> = flow {
+        // Convert ChatMessage to Gemini's Content format
+        // Gemini uses "model" instead of "assistant"
+        val contents = messages.map { msg ->
+            val role = if (msg.role == "assistant") "model" else "user"
+            Content(role, listOf(Part(msg.content)))
+        }
 
-        // Updated to use the 'gemini-flash-latest' alias confirmed by your API list
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=$apiKey"
+        val systemContent = Content("user", listOf(Part(SYSTEM_PROMPT)))
+
+        val body = json.encodeToString(
+            GeminiRequest(contents = contents, systemInstruction = systemContent)
+        )
+
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey"
 
         val request = Request.Builder()
             .url(url)
@@ -74,4 +86,13 @@ class GeminiClient(private val apiKey: String) {
             throw Exception("Failed to parse Gemini response: ${e.message}")
         }
     }.flowOn(Dispatchers.IO)
+
+    companion object {
+        const val SYSTEM_PROMPT = "You are SOMA, a helpful AI assistant. " +
+            "You have access to tools. To open an app, output [[OPEN_APP:package.name]]. " +
+            "Common packages: com.android.chrome (Chrome), com.google.android.gm (Gmail), " +
+            "com.google.android.apps.maps (Maps), com.android.settings (Settings), " +
+            "com.google.android.youtube (YouTube), com.google.android.dialer (Phone), " +
+            "com.google.android.apps.messaging (Messages)."
+    }
 }
