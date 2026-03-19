@@ -46,6 +46,8 @@ import io.brokentooth.soma.ui.theme.SomaTextPrimary
 fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val currentModel by viewModel.currentModel.collectAsStateWithLifecycle()
+    val models by viewModel.availableModels.collectAsStateWithLifecycle()
+    val modelsLoading by viewModel.modelsLoading.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     var inputText by remember { mutableStateOf("") }
     var showModelSelector by remember { mutableStateOf(false) }
@@ -69,8 +71,9 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     // Model selector bottom sheet
     if (showModelSelector) {
         ModelSelectorSheet(
-            models = viewModel.availableModels,
+            models = models,
             currentModelId = currentModel.id,
+            isLoading = modelsLoading,
             onModelSelected = { viewModel.switchModel(it) },
             onDismiss = { showModelSelector = false }
         )

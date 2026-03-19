@@ -40,7 +40,10 @@ private data class Candidate(
  * Client for Google's Gemini API.
  * Implements LlmProvider so it can be swapped with other providers.
  */
-class GeminiClient(private val apiKey: String) : LlmProvider {
+class GeminiClient(
+    private val apiKey: String,
+    private val modelId: String = "gemini-2.0-flash"
+) : LlmProvider {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val http = OkHttpClient.Builder()
@@ -62,7 +65,7 @@ class GeminiClient(private val apiKey: String) : LlmProvider {
             GeminiRequest(contents = contents, systemInstruction = systemContent)
         )
 
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$apiKey"
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelId:generateContent?key=$apiKey"
 
         val request = Request.Builder()
             .url(url)

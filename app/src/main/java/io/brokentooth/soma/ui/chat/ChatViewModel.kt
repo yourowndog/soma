@@ -1,15 +1,16 @@
 package io.brokentooth.soma.ui.chat
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.brokentooth.soma.BuildConfig
 import io.brokentooth.soma.SomaApplication
 import io.brokentooth.soma.agent.ChatAgent
-import io.brokentooth.soma.agent.ChatMessage
 import io.brokentooth.soma.agent.GeminiClient
 import io.brokentooth.soma.agent.LlmProvider
 import io.brokentooth.soma.agent.ModelOption
+import io.brokentooth.soma.agent.ModelRegistry
 import io.brokentooth.soma.agent.OpenRouterClient
 import io.brokentooth.soma.data.model.Message
 import io.brokentooth.soma.data.model.Session
@@ -36,17 +37,20 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val sessionDao = db.sessionDao()
     private val messageDao = db.messageDao()
 
-    val availableModels = listOf(
-        ModelOption("gemini-flash", "Gemini Flash", "gemini"),
-        ModelOption("anthropic/claude-sonnet-4", "Claude Sonnet 4", "openrouter"),
-        ModelOption("deepseek/deepseek-r1", "DeepSeek R1", "openrouter"),
-    )
+    // Default model used until dynamic list loads
+    private val defaultModel = ModelOption("gemini-2.0-flash", "Gemini 2.0 Flash", "gemini")
 
-    private val _currentModel = MutableStateFlow(availableModels.first())
+    private val _availableModels = MutableStateFlow(listOf(defaultModel))
+    val availableModels: StateFlow<List<ModelOption>> = _availableModels.asStateFlow()
+
+    private val _modelsLoading = MutableStateFlow(true)
+    val modelsLoading: StateFlow<Boolean> = _modelsLoading.asStateFlow()
+
+    private val _currentModel = MutableStateFlow(defaultModel)
     val currentModel: StateFlow<ModelOption> = _currentModel.asStateFlow()
 
     private val agent = ChatAgent(
-        provider = createProvider(availableModels.first()),
+        provider = createProvider(defaultModel),
         messageDao = messageDao
     )
 
@@ -58,6 +62,32 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch { initSession() }
+        viewModelScope.launch { loadModels() }
+    }
+
+    // ── Dynamic model loading ────────────────────────────────────────────────
+
+    private suspend fun loadModels() {
+        try {
+            val models = ModelRegistry.fetchAvailableModels(
+                geminiApiKey = BuildConfig.GOOGLE_API_KEY,
+                openRouterApiKey = BuildConfig.OPENROUTER_API_KEY
+            )
+            if (models.isNotEmpty()) {
+                _availableModels.value = models
+                // If current default isn't in the fetched list, switch to first available
+                if (models.none { it.id == _currentModel.value.id }) {
+                    val first = models.first()
+                    _currentModel.value = first
+                    agent.switchProvider(createProvider(first))
+                    Log.w("ChatViewModel", "Default model ${defaultModel.id} not available, switched to ${first.id}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("ChatViewModel", "Failed to load models", e)
+        } finally {
+            _modelsLoading.value = false
+        }
     }
 
     // ── Model switching ──────────────────────────────────────────────────────
@@ -81,7 +111,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun createProvider(model: ModelOption): LlmProvider {
         return when (model.provider) {
-            "gemini" -> GeminiClient(BuildConfig.GOOGLE_API_KEY)
+            "gemini" -> GeminiClient(
+                apiKey = BuildConfig.GOOGLE_API_KEY,
+                modelId = model.id
+            )
             "openrouter" -> OpenRouterClient(
                 apiKey = BuildConfig.OPENROUTER_API_KEY,
                 modelId = model.id
