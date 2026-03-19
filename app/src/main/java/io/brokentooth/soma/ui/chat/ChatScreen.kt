@@ -4,9 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,19 +28,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.brokentooth.soma.agent.AnthropicClient
 import io.brokentooth.soma.data.model.Message
-import io.brokentooth.soma.ui.theme.SomaAccentBlue
 import io.brokentooth.soma.ui.theme.SomaBackground
 import io.brokentooth.soma.ui.theme.SomaSurface
 import io.brokentooth.soma.ui.theme.SomaTextMuted
 import io.brokentooth.soma.ui.theme.SomaTextPrimary
-import io.brokentooth.soma.ui.theme.SomaTextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,18 +46,25 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     var inputText by remember { mutableStateOf("") }
+    
+    val density = LocalDensity.current
+    val isKeyboardVisible = WindowInsets.ime.getBottom(density) > 0
 
     // Total item count including the in-progress streaming bubble
     val totalItems = uiState.messages.size + if (uiState.streamingText != null) 1 else 0
 
-    // Scroll to bottom whenever item count changes or streaming starts
-    LaunchedEffect(totalItems, uiState.isStreaming) {
+    // Scroll to bottom whenever:
+    // 1. A new message is added
+    // 2. The assistant is streaming text
+    // 3. THE KEYBOARD OPENS
+    LaunchedEffect(totalItems, uiState.isStreaming, isKeyboardVisible) {
         if (totalItems > 0) {
-            listState.scrollToItem(totalItems - 1)
+            listState.animateScrollToItem(totalItems - 1)
         }
     }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
@@ -68,7 +77,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                 },
                 actions = {
                     Text(
-                        text = AnthropicClient.MODEL,
+                        text = "Gemini Flash",
                         fontSize = 12.sp,
                         color = SomaTextMuted,
                         modifier = Modifier.padding(end = 16.dp)
@@ -89,7 +98,10 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                     inputText = ""
                 },
                 onStop = { viewModel.stopStreaming() },
-                isStreaming = uiState.isStreaming
+                isStreaming = uiState.isStreaming,
+                modifier = Modifier
+                    .imePadding() // Pushes the input bar UP when keyboard appears
+                    .navigationBarsPadding() // Stays above the system navigation bar
             )
         },
         containerColor = SomaBackground
@@ -106,7 +118,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
 
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(vertical = 8.dp),
+                contentPadding = PaddingValues(bottom = 16.dp, top = 8.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(uiState.messages, key = { it.id }) { message ->

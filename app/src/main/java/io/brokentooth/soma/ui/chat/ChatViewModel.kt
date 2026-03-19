@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.brokentooth.soma.BuildConfig
 import io.brokentooth.soma.SomaApplication
-import io.brokentooth.soma.agent.AnthropicClient
+import io.brokentooth.soma.agent.GeminiClient
 import io.brokentooth.soma.agent.ChatAgent
 import io.brokentooth.soma.data.model.Message
 import io.brokentooth.soma.data.model.Session
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 data class ChatUiState(
     val sessionId: String = "",
     val messages: List<Message> = emptyList(),
-    /** Non-null while Claude is streaming; updated per-token. */
+    /** Non-null while streaming; updated per-token. */
     val streamingText: String? = null,
     val isStreaming: Boolean = false,
     val error: String? = null
@@ -31,7 +31,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val sessionDao = db.sessionDao()
     private val messageDao = db.messageDao()
     private val agent = ChatAgent(
-        client = AnthropicClient(BuildConfig.ANTHROPIC_API_KEY),
+        client = GeminiClient(BuildConfig.GOOGLE_API_KEY),
         messageDao = messageDao
     )
 

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -17,13 +19,13 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        val props = java.util.Properties()
+        val props = Properties()
         val localProps = rootProject.file("local.properties")
         if (localProps.exists()) props.load(localProps.inputStream())
         buildConfigField(
             "String",
-            "ANTHROPIC_API_KEY",
-            "\"${props.getProperty("ANTHROPIC_API_KEY", "")}\""
+            "GOOGLE_API_KEY",
+            "\"${props.getProperty("GOOGLE_API_KEY", "")}\""
         )
     }
 
@@ -50,11 +52,23 @@ android {
         buildConfig = true
         compose = true
     }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/io.netty.versions.properties"
+            excludes += "META-INF/DEPENDENCIES"
+        }
+    }
 }
 
 dependencies {
+    // UI Support for AppCompat themes
+    implementation("androidx.appcompat:appcompat:1.7.0")
+
     // Koog Agent Framework (Phase 1+)
-    implementation("ai.koog:koog-agents:0.6.4")
+    implementation("ai.koog:koog-agents:0.6.2")
 
     // Jetpack Compose (BOM)
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
