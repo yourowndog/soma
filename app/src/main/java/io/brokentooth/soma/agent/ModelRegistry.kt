@@ -128,8 +128,14 @@ object ModelRegistry {
                 .filter { !it.name.contains("aqa") }
                 .filter { !it.name.contains("tts") }
                 .filter { !it.name.contains("imagen") }
+                // Remove image-generation models (e.g. gemini-2.5-flash-image, gemini-3-pro-image-preview)
+                // These are not chat models — keep multimodal chat models which don't have "-image" suffix
+                .filter { !it.name.contains("-image") }
+                // Remove domain-specific non-chat models
+                .filter { !it.name.contains("robotics") }
+                .filter { !it.name.contains("computer-use") }
 
-            Log.d(TAG, "Gemini: ${filtered.size} after filtering out embedding/aqa/tts/imagen")
+            Log.d(TAG, "Gemini: ${filtered.size} after filtering non-chat models")
 
             val result = filtered
                 .map { model ->
@@ -180,15 +186,20 @@ object ModelRegistry {
                 .mapValues { it.value.size }
             Log.d(TAG, "OpenRouter modality breakdown: $modalityCounts")
 
-            // Keep any model that can output text — accept null/unknown modality too
-            // Only exclude models that explicitly output non-text (audio, image)
+            // Keep models that output text (chat/multimodal), drop pure audio/image-only outputs
+            // Rule: if modality has "->", the output part must contain "text"
+            // If modality is null/empty (unknown), keep it — better to over-include than miss models
             val textModels = parsed.data.filter { model ->
                 val modality = model.architecture?.modality ?: ""
-                // Exclude only if it explicitly outputs non-text formats
-                !modality.endsWith("->audio") && !modality.endsWith("->image")
+                if (modality.contains("->")) {
+                    val output = modality.substringAfter("->")
+                    output.contains("text")
+                } else {
+                    true  // unknown modality — keep
+                }
             }
 
-            Log.d(TAG, "OpenRouter: ${textModels.size} after modality filter (kept null/unknown)")
+            Log.d(TAG, "OpenRouter: ${textModels.size} after modality filter (output must contain text)")
 
             val filtered = textModels
                 .filter { !it.id.contains(":extended") }
