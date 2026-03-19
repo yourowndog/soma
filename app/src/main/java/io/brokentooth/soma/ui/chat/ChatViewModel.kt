@@ -156,6 +156,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 val responseText = accum.toString()
+                Log.d("ChatViewModel", "Full response: $responseText")
                 commitAssistantMessage(responseText)
 
                 // Check for tool calls in the response
