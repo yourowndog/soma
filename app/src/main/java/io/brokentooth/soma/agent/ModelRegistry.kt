@@ -91,7 +91,10 @@ object ModelRegistry {
 
     private suspend fun fetchGeminiModels(apiKey: String): List<ModelOption> =
         withContext(Dispatchers.IO) {
-            if (apiKey.isBlank()) return@withContext fallbackGeminiModels()
+            if (apiKey.isBlank()) {
+                Log.w(TAG, "Gemini API key is blank, using fallback")
+                return@withContext fallbackGeminiModels()
+            }
 
             val request = Request.Builder()
                 .url("https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey")
@@ -108,15 +111,28 @@ object ModelRegistry {
             val body = response.body?.string() ?: return@withContext fallbackGeminiModels()
             val parsed = json.decodeFromString<GeminiModelsResponse>(body)
 
-            parsed.models
+            Log.d(TAG, "Gemini API returned ${parsed.models.size} total models")
+
+            // Log all raw model names for debugging
+            parsed.models.forEach { model ->
+                Log.d(TAG, "  Gemini raw: ${model.name} methods=${model.supportedGenerationMethods}")
+            }
+
+            val chatModels = parsed.models
                 .filter { "generateContent" in it.supportedGenerationMethods }
-                // Skip embedding, AQA, and TTS models
+
+            Log.d(TAG, "Gemini: ${chatModels.size} support generateContent")
+
+            val filtered = chatModels
                 .filter { !it.name.contains("embedding") }
                 .filter { !it.name.contains("aqa") }
                 .filter { !it.name.contains("tts") }
                 .filter { !it.name.contains("imagen") }
+
+            Log.d(TAG, "Gemini: ${filtered.size} after filtering out embedding/aqa/tts/imagen")
+
+            val result = filtered
                 .map { model ->
-                    // name is "models/gemini-2.0-flash" → extract "gemini-2.0-flash"
                     val modelId = model.name.removePrefix("models/")
                     ModelOption(
                         id = modelId,
@@ -124,16 +140,22 @@ object ModelRegistry {
                         provider = "gemini"
                     )
                 }
-                // Deduplicate: keep the shorter/cleaner variant when there are aliases
                 .distinctBy { it.displayName }
                 .sortedBy { it.displayName }
+
+            Log.i(TAG, "Gemini: returning ${result.size} models")
+            result.forEach { Log.d(TAG, "  Gemini model: ${it.id} → ${it.displayName}") }
+            result
         }
 
     // ── OpenRouter ───────────────────────────────────────────────────────────
 
     private suspend fun fetchOpenRouterModels(apiKey: String): List<ModelOption> =
         withContext(Dispatchers.IO) {
-            if (apiKey.isBlank()) return@withContext fallbackOpenRouterModels()
+            if (apiKey.isBlank()) {
+                Log.w(TAG, "OpenRouter API key is blank, using fallback")
+                return@withContext fallbackOpenRouterModels()
+            }
 
             val request = Request.Builder()
                 .url("https://openrouter.ai/api/v1/models")
@@ -151,15 +173,29 @@ object ModelRegistry {
             val body = response.body?.string() ?: return@withContext fallbackOpenRouterModels()
             val parsed = json.decodeFromString<ORModelsResponse>(body)
 
-            parsed.data
-                .filter { model ->
-                    val modality = model.architecture?.modality ?: ""
-                    // Keep models that output text (chat models)
-                    // text->text, text+image->text, etc.
-                    modality.endsWith("->text") && model.contextLength > 0
-                }
-                // Filter out extended-thinking variants (not useful for chat)
+            Log.d(TAG, "OpenRouter API returned ${parsed.data.size} total models")
+
+            // Log modality distribution for debugging
+            val modalityCounts = parsed.data.groupBy { it.architecture?.modality ?: "null" }
+                .mapValues { it.value.size }
+            Log.d(TAG, "OpenRouter modality breakdown: $modalityCounts")
+
+            // Keep any model that can output text — accept null/unknown modality too
+            // Only exclude models that explicitly output non-text (audio, image)
+            val textModels = parsed.data.filter { model ->
+                val modality = model.architecture?.modality ?: ""
+                // Exclude only if it explicitly outputs non-text formats
+                !modality.endsWith("->audio") && !modality.endsWith("->image")
+            }
+
+            Log.d(TAG, "OpenRouter: ${textModels.size} after modality filter (kept null/unknown)")
+
+            val filtered = textModels
                 .filter { !it.id.contains(":extended") }
+
+            Log.d(TAG, "OpenRouter: ${filtered.size} after removing :extended variants")
+
+            val result = filtered
                 .map { model ->
                     ModelOption(
                         id = model.id,
@@ -168,19 +204,26 @@ object ModelRegistry {
                     )
                 }
                 .sortedBy { it.displayName.lowercase() }
+
+            Log.i(TAG, "OpenRouter: returning ${result.size} models")
+            // Log first 20 and last 5 to avoid log spam
+            result.take(20).forEach { Log.d(TAG, "  OR model: ${it.id}") }
+            if (result.size > 20) Log.d(TAG, "  ... and ${result.size - 20} more")
+            result
         }
 
     // ── Fallbacks ────────────────────────────────────────────────────────────
 
     private fun fallbackGeminiModels() = listOf(
-        ModelOption("gemini-2.0-flash", "Gemini 2.0 Flash", "gemini"),
-        ModelOption("gemini-2.0-flash-lite", "Gemini 2.0 Flash-Lite", "gemini"),
+        ModelOption("gemini-2.5-flash-preview-04-17", "Gemini 2.5 Flash Preview", "gemini"),
+        ModelOption("gemini-2.5-pro-preview-05-06", "Gemini 2.5 Pro Preview", "gemini"),
         ModelOption("gemini-1.5-pro", "Gemini 1.5 Pro", "gemini"),
     )
 
     private fun fallbackOpenRouterModels() = listOf(
+        ModelOption("google/gemini-2.5-flash-preview:free", "Gemini 2.5 Flash (Free)", "openrouter"),
         ModelOption("anthropic/claude-sonnet-4", "Claude Sonnet 4", "openrouter"),
-        ModelOption("anthropic/claude-haiku", "Claude Haiku", "openrouter"),
+        ModelOption("anthropic/claude-haiku-3.5", "Claude 3.5 Haiku", "openrouter"),
         ModelOption("openai/gpt-4o", "GPT-4o", "openrouter"),
         ModelOption("openai/gpt-4o-mini", "GPT-4o Mini", "openrouter"),
         ModelOption("deepseek/deepseek-r1", "DeepSeek R1", "openrouter"),

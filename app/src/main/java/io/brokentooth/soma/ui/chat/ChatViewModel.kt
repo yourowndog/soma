@@ -38,7 +38,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val messageDao = db.messageDao()
 
     // Default model — free tier via OpenRouter so it always works
-    private val defaultModel = ModelOption("google/gemini-2.0-flash-exp:free", "Gemini 2.0 Flash (Free)", "openrouter")
+    private val defaultModel = ModelOption("google/gemini-2.5-flash-preview:free", "Gemini 2.5 Flash (Free)", "openrouter")
 
     private val _availableModels = MutableStateFlow(listOf(defaultModel))
     val availableModels: StateFlow<List<ModelOption>> = _availableModels.asStateFlow()
@@ -175,6 +175,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     sessionDao.updateTitle(currentSessionId, text.trim().take(50))
                 }
             } catch (e: Exception) {
+                Log.e("ChatViewModel", "sendMessage failed: model=${_currentModel.value.id} provider=${_currentModel.value.provider}", e)
                 if (accum.isNotEmpty()) commitAssistantMessage(accum.toString())
                 _uiState.update { it.copy(streamingText = null, isStreaming = false, error = e.message) }
             }
