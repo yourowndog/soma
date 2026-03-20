@@ -164,14 +164,16 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                 // Error banner
                 uiState.error?.let { error ->
                     item(key = "error") {
-                        Text(
-                            text = "Error: $error",
-                            color = androidx.compose.ui.graphics.Color(0xFFF85149),
-                            fontSize = 12.sp,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Text(
+                                text = "Error: $error",
+                                color = androidx.compose.ui.graphics.Color(0xFFF85149),
+                                fontSize = 12.sp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
 
@@ -183,15 +185,17 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
 
 @Composable
 private fun SystemMessage(text: String) {
-    Text(
-        text = text,
-        color = SomaTextMuted,
-        fontSize = 12.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    )
+    androidx.compose.foundation.text.selection.SelectionContainer {
+        Text(
+            text = text,
+            color = SomaTextMuted,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        )
+    }
 }
 
 @Composable
