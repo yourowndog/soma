@@ -28,26 +28,6 @@ private data class GeminiModelInfo(
     val supportedGenerationMethods: List<String> = emptyList()
 )
 
-// ── OpenRouter models list API types ─────────────────────────────────────────
-
-@Serializable
-private data class ORModelsResponse(
-    val data: List<ORModelInfo> = emptyList()
-)
-
-@Serializable
-private data class ORModelInfo(
-    val id: String,                                      // "anthropic/claude-sonnet-4"
-    val name: String = "",                               // "Claude Sonnet 4"
-    @SerialName("context_length") val contextLength: Int = 0,
-    val architecture: ORArchitecture? = null
-)
-
-@Serializable
-private data class ORArchitecture(
-    val modality: String = ""                            // "text->text", "text+image->text"
-)
-
 // ── Registry ─────────────────────────────────────────────────────────────────
 
 object ModelRegistry {
@@ -68,7 +48,7 @@ object ModelRegistry {
         openRouterApiKey: String
     ): List<ModelOption> = coroutineScope {
         val geminiDeferred = async { fetchGeminiModels(geminiApiKey) }
-        val openRouterDeferred = async { fetchOpenRouterModels(openRouterApiKey) }
+        val openRouterDeferred = async { OpenRouterModels.fetchModels(openRouterApiKey, http) }
 
         val geminiModels = try {
             geminiDeferred.await()
@@ -81,7 +61,7 @@ object ModelRegistry {
             openRouterDeferred.await()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to fetch OpenRouter models", e)
-            fallbackOpenRouterModels()
+            OpenRouterModels.getFallbackModels()
         }
 
         geminiModels + openRouterModels
@@ -154,92 +134,10 @@ object ModelRegistry {
             result
         }
 
-    // ── OpenRouter ───────────────────────────────────────────────────────────
-
-    private suspend fun fetchOpenRouterModels(apiKey: String): List<ModelOption> =
-        withContext(Dispatchers.IO) {
-            if (apiKey.isBlank()) {
-                Log.w(TAG, "OpenRouter API key is blank, using fallback")
-                return@withContext fallbackOpenRouterModels()
-            }
-
-            val request = Request.Builder()
-                .url("https://openrouter.ai/api/v1/models")
-                .addHeader("Authorization", "Bearer $apiKey")
-                .get()
-                .build()
-
-            val response = http.newCall(request).execute()
-            if (!response.isSuccessful) {
-                val body = response.body?.string() ?: ""
-                Log.e(TAG, "OpenRouter models API ${response.code}: $body")
-                return@withContext fallbackOpenRouterModels()
-            }
-
-            val body = response.body?.string() ?: return@withContext fallbackOpenRouterModels()
-            val parsed = json.decodeFromString<ORModelsResponse>(body)
-
-            Log.d(TAG, "OpenRouter API returned ${parsed.data.size} total models")
-
-            // Log modality distribution for debugging
-            val modalityCounts = parsed.data.groupBy { it.architecture?.modality ?: "null" }
-                .mapValues { it.value.size }
-            Log.d(TAG, "OpenRouter modality breakdown: $modalityCounts")
-
-            // Keep models that output text (chat/multimodal), drop pure audio/image-only outputs
-            // Rule: if modality has "->", the output part must contain "text"
-            // If modality is null/empty (unknown), keep it — better to over-include than miss models
-            val textModels = parsed.data.filter { model ->
-                val modality = model.architecture?.modality ?: ""
-                if (modality.contains("->")) {
-                    val output = modality.substringAfter("->")
-                    output.contains("text")
-                } else {
-                    true  // unknown modality — keep
-                }
-            }
-
-            Log.d(TAG, "OpenRouter: ${textModels.size} after modality filter (output must contain text)")
-
-            val filtered = textModels
-                .filter { !it.id.contains(":extended") }
-
-            Log.d(TAG, "OpenRouter: ${filtered.size} after removing :extended variants")
-
-            val result = filtered
-                .map { model ->
-                    ModelOption(
-                        id = model.id,
-                        displayName = model.name.ifBlank { model.id },
-                        provider = "openrouter"
-                    )
-                }
-                .sortedBy { it.displayName.lowercase() }
-
-            Log.i(TAG, "OpenRouter: returning ${result.size} models")
-            // Log first 20 and last 5 to avoid log spam
-            result.take(20).forEach { Log.d(TAG, "  OR model: ${it.id}") }
-            if (result.size > 20) Log.d(TAG, "  ... and ${result.size - 20} more")
-            result
-        }
-
-    // ── Fallbacks ────────────────────────────────────────────────────────────
 
     private fun fallbackGeminiModels() = listOf(
-        ModelOption("gemini-2.5-flash-preview-04-17", "Gemini 2.5 Flash Preview", "gemini"),
-        ModelOption("gemini-2.5-pro-preview-05-06", "Gemini 2.5 Pro Preview", "gemini"),
-        ModelOption("gemini-1.5-pro", "Gemini 1.5 Pro", "gemini"),
-    )
-
-    private fun fallbackOpenRouterModels() = listOf(
-        ModelOption("google/gemini-2.5-flash-preview:free", "Gemini 2.5 Flash (Free)", "openrouter"),
-        ModelOption("anthropic/claude-sonnet-4", "Claude Sonnet 4", "openrouter"),
-        ModelOption("anthropic/claude-haiku-3.5", "Claude 3.5 Haiku", "openrouter"),
-        ModelOption("openai/gpt-4o", "GPT-4o", "openrouter"),
-        ModelOption("openai/gpt-4o-mini", "GPT-4o Mini", "openrouter"),
-        ModelOption("deepseek/deepseek-r1", "DeepSeek R1", "openrouter"),
-        ModelOption("deepseek/deepseek-chat-v3-0324", "DeepSeek V3", "openrouter"),
-        ModelOption("google/gemini-2.5-pro-preview", "Gemini 2.5 Pro (OR)", "openrouter"),
-        ModelOption("meta-llama/llama-4-maverick", "Llama 4 Maverick", "openrouter"),
+        ModelOption("gemini-2.5-flash-preview-04-17", "[Goo] Gemini 2.5 Flash Preview", "gemini"),
+        ModelOption("gemini-2.5-pro-preview-05-06", "[Goo] Gemini 2.5 Pro Preview", "gemini"),
+        ModelOption("gemini-1.5-pro", "[Goo] Gemini 1.5 Pro", "gemini"),
     )
 }

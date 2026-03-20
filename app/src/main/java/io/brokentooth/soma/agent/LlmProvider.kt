@@ -15,7 +15,12 @@ data class ChatMessage(val role: String, val content: String)
 data class ModelOption(
     val id: String,           // e.g. "gemini-flash", "openrouter/claude-sonnet"
     val displayName: String,  // e.g. "Gemini Flash", "Claude Sonnet 4"
-    val provider: String      // "gemini" or "openrouter"
+    val provider: String,     // "gemini" or "openrouter"
+    val isFree: Boolean = false,
+    val contextLength: Int = 0,
+    val inputPrice: Float = 0f,
+    val outputPrice: Float = 0f,
+    val ipdScore: Float = 0f
 )
 
 /**

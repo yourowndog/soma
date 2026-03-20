@@ -38,7 +38,23 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val messageDao = db.messageDao()
 
     // Default model — free tier via OpenRouter so it always works
-    private val defaultModel = ModelOption("google/gemini-2.5-flash-preview:free", "Gemini 2.5 Flash (Free)", "openrouter")
+    private val defaultModel = ModelOption(
+        id = "stepfun/step-3.5-flash:free",
+        displayName = "[Stp] Step 3.5 Flash (Free)", 
+        provider = "openrouter",
+        isFree = true,
+        contextLength = 256000,
+        ipdScore = 100f
+    )
+
+    val geminiModel = ModelOption(
+        id = "gemini-flash",
+        displayName = "[Goo] Gemini 3.1 Flash (Direct)",
+        provider = "gemini",
+        isFree = true,
+        contextLength = 1048576,
+        ipdScore = 1000f // Keep it top
+    )
 
     private val _availableModels = MutableStateFlow(listOf(defaultModel))
     val availableModels: StateFlow<List<ModelOption>> = _availableModels.asStateFlow()
@@ -73,11 +89,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 geminiApiKey = BuildConfig.GOOGLE_API_KEY,
                 openRouterApiKey = BuildConfig.OPENROUTER_API_KEY
             )
-            if (models.isNotEmpty()) {
-                _availableModels.value = models
+            // Prepend gemini direct model
+            val combined = (listOf(geminiModel) + models).distinctBy { it.id }
+            if (combined.isNotEmpty()) {
+                _availableModels.value = combined
                 // If current default isn't in the fetched list, switch to first available
-                if (models.none { it.id == _currentModel.value.id }) {
-                    val first = models.first()
+                if (combined.none { it.id == _currentModel.value.id }) {
+                    val first = combined.first()
                     _currentModel.value = first
                     agent.switchProvider(createProvider(first))
                     Log.w("ChatViewModel", "Default model ${defaultModel.id} not available, switched to ${first.id}")
@@ -148,37 +166,78 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(messages = it.messages + userMsg, isStreaming = true, streamingText = "", error = null)
             }
 
-            val accum = StringBuilder()
-            try {
-                agent.sendMessage(text.trim()).collect { token ->
-                    accum.append(token)
-                    _uiState.update { it.copy(streamingText = accum.toString()) }
-                }
+            var attempts = 0
+            val freeModels = _availableModels.value.filter { it.isFree }
+            var maxAttempts = if (_currentModel.value.isFree) freeModels.size else 1
+            if (maxAttempts == 0) maxAttempts = 1
 
-                val responseText = accum.toString()
-                Log.d("ChatViewModel", "Full response: $responseText")
-                commitAssistantMessage(responseText)
+            var success = false
 
-                // Check for tool calls in the response
-                val toolResult = handleToolCalls(getApplication(), responseText)
-                if (toolResult != null) {
-                    val toolMsg = Message(
-                        sessionId = currentSessionId,
-                        role = "system",
-                        content = toolResult
-                    )
-                    messageDao.insert(toolMsg)
-                    _uiState.update { it.copy(messages = it.messages + toolMsg) }
-                }
+            while (attempts < maxAttempts && !success) {
+                val accum = StringBuilder()
+                try {
+                    agent.sendMessage(text.trim()).collect { token ->
+                        accum.append(token)
+                        _uiState.update { it.copy(streamingText = accum.toString()) }
+                    }
 
-                // Rename session after first exchange
-                if (_uiState.value.messages.size <= 2) {
-                    sessionDao.updateTitle(currentSessionId, text.trim().take(50))
+                    val responseText = accum.toString()
+                    Log.d("ChatViewModel", "Full response: $responseText")
+                    commitAssistantMessage(responseText)
+
+                    // Check for tool calls in the response
+                    val toolResult = handleToolCalls(getApplication(), responseText)
+                    if (toolResult != null) {
+                        val toolMsg = Message(
+                            sessionId = currentSessionId,
+                            role = "system",
+                            content = toolResult
+                        )
+                        messageDao.insert(toolMsg)
+                        _uiState.update { it.copy(messages = it.messages + toolMsg) }
+                    }
+
+                    // Rename session after first exchange
+                    if (_uiState.value.messages.size <= 2) {
+                        sessionDao.updateTitle(currentSessionId, text.trim().take(50))
+                    }
+                    success = true
+                } catch (e: Exception) {
+                    val errorMsg = e.message ?: ""
+                    Log.e("ChatViewModel", "sendMessage failed: model=${_currentModel.value.id} provider=${_currentModel.value.provider}", e)
+
+                    if ((errorMsg.contains("429") || errorMsg.contains("rate limit", true)) && _currentModel.value.isFree) {
+                        attempts++
+                        if (attempts >= maxAttempts) {
+                            _uiState.update { it.copy(streamingText = null, isStreaming = false, error = "All free model usage currently expended. Please wait a few moments or switch to a paid model.") }
+                            break
+                        }
+
+                        // Round-robin swap
+                        val currentIndex = freeModels.indexOfFirst { it.id == _currentModel.value.id }
+                        val nextIndex = if (currentIndex >= 0) (currentIndex + 1) % freeModels.size else 0
+                        val nextModel = freeModels[nextIndex]
+
+                        // Switch model
+                        _currentModel.value = nextModel
+                        agent.switchProvider(createProvider(nextModel))
+
+                        // Add system message
+                        val sysMsg = Message(
+                            sessionId = currentSessionId,
+                            role = "system",
+                            content = "Rate limit reached. Auto-swapped to ${nextModel.displayName}"
+                        )
+                        messageDao.insert(sysMsg)
+                        _uiState.update { it.copy(messages = it.messages + sysMsg, error = null, streamingText = "") }
+
+                        // continue to retry loop
+                    } else {
+                        if (accum.isNotEmpty()) commitAssistantMessage(accum.toString())
+                        _uiState.update { it.copy(streamingText = null, isStreaming = false, error = e.message) }
+                        break
+                    }
                 }
-            } catch (e: Exception) {
-                Log.e("ChatViewModel", "sendMessage failed: model=${_currentModel.value.id} provider=${_currentModel.value.provider}", e)
-                if (accum.isNotEmpty()) commitAssistantMessage(accum.toString())
-                _uiState.update { it.copy(streamingText = null, isStreaming = false, error = e.message) }
             }
         }
     }

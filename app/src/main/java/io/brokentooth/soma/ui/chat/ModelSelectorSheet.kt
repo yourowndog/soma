@@ -88,18 +88,27 @@ fun ModelSelectorSheet(
 
             Spacer(Modifier.height(8.dp))
 
-            // Group models by provider
-            val grouped = models.groupBy { it.provider }
+            // Group models by category
+            val grouped = models.groupBy { 
+                if (it.provider == "gemini" && it.isFree) "Direct (Free)"
+                else if (it.isFree) "Free Models"
+                else if (it.ipdScore >= 80f) "High Value Paid"
+                else "Standard Paid"
+            }
 
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 500.dp)
             ) {
-                grouped.forEach { (provider, providerModels) ->
-                    item(key = "header_$provider") {
+                // Ensure order: Direct -> Free -> High Value -> Standard Paid
+                val categoryOrder = listOf("Direct (Free)", "Free Models", "High Value Paid", "Standard Paid")
+                val sortedGroups = grouped.entries.sortedBy { categoryOrder.indexOf(it.key).takeIf { idx -> idx != -1 } ?: 99 }
+
+                sortedGroups.forEach { (category, categoryModels) ->
+                    item(key = "header_$category") {
                         Text(
-                            text = provider.uppercase(),
+                            text = category.uppercase(),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = SomaTextMuted,
@@ -107,7 +116,7 @@ fun ModelSelectorSheet(
                         )
                     }
 
-                    items(providerModels, key = { "${it.provider}/${it.id}" }) { model ->
+                    items(categoryModels, key = { "${it.provider}/${it.id}" }) { model ->
                         val isSelected = model.id == currentModelId
 
                         Row(
