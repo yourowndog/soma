@@ -1,6 +1,7 @@
 package io.brokentooth.soma.ui.chat
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -93,8 +94,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             val combined = (listOf(geminiModel) + models).distinctBy { it.id }
             if (combined.isNotEmpty()) {
                 _availableModels.value = combined
-                // If current default isn't in the fetched list, switch to first available
-                if (combined.none { it.id == _currentModel.value.id }) {
+
+                // Restore persisted model selection
+                val savedId = loadSelectedModelId()
+                val restored = savedId?.let { id -> combined.find { it.id == id } }
+                if (restored != null) {
+                    _currentModel.value = restored
+                    agent.switchProvider(createProvider(restored))
+                    Log.d("ChatViewModel", "Restored persisted model: ${restored.id}")
+                } else if (combined.none { it.id == _currentModel.value.id }) {
                     val first = combined.first()
                     _currentModel.value = first
                     agent.switchProvider(createProvider(first))
@@ -114,6 +122,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         if (model.id == _currentModel.value.id) return
         _currentModel.value = model
         agent.switchProvider(createProvider(model))
+        saveSelectedModelId(model.id)
 
         // Add a system message to the chat
         viewModelScope.launch {
@@ -221,6 +230,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         // Switch model
                         _currentModel.value = nextModel
                         agent.switchProvider(createProvider(nextModel))
+                        saveSelectedModelId(nextModel.id)
 
                         // Add system message
                         val sysMsg = Message(
@@ -264,4 +274,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         agent.finalizeAssistantMessage(text)
         _uiState.update { it.copy(messages = it.messages + msg, streamingText = null, isStreaming = false) }
     }
+
+    // ── Model persistence ─────────────────────────────────────────────────────
+
+    private fun prefs(): android.content.SharedPreferences =
+        getApplication<Application>().getSharedPreferences("soma_prefs", Context.MODE_PRIVATE)
+
+    private fun saveSelectedModelId(modelId: String) {
+        prefs().edit().putString("selected_model_id", modelId).apply()
+    }
+
+    private fun loadSelectedModelId(): String? =
+        prefs().getString("selected_model_id", null)
 }

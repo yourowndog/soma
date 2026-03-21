@@ -22,7 +22,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import io.brokentooth.soma.agent.ModelOption
 import io.brokentooth.soma.ui.theme.SomaAccentBlue
 import io.brokentooth.soma.ui.theme.SomaAccentGreen
+import io.brokentooth.soma.ui.theme.SomaBorder
 import io.brokentooth.soma.ui.theme.SomaSurface
 import io.brokentooth.soma.ui.theme.SomaTextMuted
 import io.brokentooth.soma.ui.theme.SomaTextPrimary
@@ -46,6 +55,17 @@ fun ModelSelectorSheet(
     onDismiss: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    var searchQuery by remember { mutableStateOf("") }
+    var showFreeOnly by remember { mutableStateOf(false) }
+
+    val filteredModels = models.filter { model ->
+        val matchesSearch = searchQuery.isBlank() ||
+            model.displayName.contains(searchQuery, ignoreCase = true) ||
+            model.id.contains(searchQuery, ignoreCase = true)
+        val matchesFree = !showFreeOnly || model.isFree
+        matchesSearch && matchesFree
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -79,17 +99,52 @@ fun ModelSelectorSheet(
                     )
                 } else {
                     Text(
-                        text = "${models.size} models",
+                        text = "${filteredModels.size} models",
                         fontSize = 11.sp,
                         color = SomaTextMuted
                     )
                 }
             }
 
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search models...", color = SomaTextMuted) },
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = SomaAccentBlue,
+                    unfocusedBorderColor = SomaBorder,
+                    cursorColor = SomaAccentBlue,
+                    focusedTextColor = SomaTextPrimary,
+                    unfocusedTextColor = SomaTextPrimary
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Free models only", color = SomaTextSecondary, fontSize = 13.sp)
+                Switch(
+                    checked = showFreeOnly,
+                    onCheckedChange = { showFreeOnly = it },
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = SomaAccentGreen,
+                        checkedThumbColor = SomaTextPrimary
+                    )
+                )
+            }
+
             Spacer(Modifier.height(8.dp))
 
             // Group models by category
-            val grouped = models.groupBy { 
+            val grouped = filteredModels.groupBy {
                 if (it.provider == "gemini" && it.isFree) "Direct (Free)"
                 else if (it.isFree) "Free Models"
                 else if (it.ipdScore >= 80f) "High Value Paid"
