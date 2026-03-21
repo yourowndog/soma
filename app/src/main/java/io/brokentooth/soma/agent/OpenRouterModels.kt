@@ -338,14 +338,4 @@ object OpenRouterModels {
                 .thenBy { it.displayName }                        // Alphabetical rest
         )
     }
-
-    fun getFallbackModels(): List<ModelOption> = listOf(
-        ModelOption("stepfun/step-3.5-flash:free", "[OR] Step 3.5 Flash (Free)", "openrouter", true, 256000, 0f, 0f, 100f),
-        ModelOption("qwen/qwen3-next-80b-a3b-instruct:free", "[OR] Qwen3 Next 80B (Free)", "openrouter", true, 262000, 0f, 0f, 99f),
-        ModelOption("nvidia/nemotron-3-super-120b-a12b:free", "[OR] Nemotron 3 Super (Free)", "openrouter", true, 262144, 0f, 0f, 98f),
-        ModelOption("arcee-ai/trinity-large-preview:free", "[OR] Trinity Large (Free)", "openrouter", true, 131000, 0f, 0f, 97f),
-        ModelOption("deepseek/deepseek-v3.2", "[OR] DeepSeek V3.2 ($0.26/$0.38)", "openrouter", false, 163840, 0.26f, 0.38f, 90f),
-        ModelOption("minimax/minimax-m2.1", "[OR] MiniMax M2.1 ($0.27/$0.95)", "openrouter", false, 196608, 0.27f, 0.95f, 89f),
-        ModelOption("google/gemini-3.1-flash-lite-preview", "[OR] Gemini 3.1 Flash Lite ($0.25/$1.50)", "openrouter", false, 1048576, 0.25f, 1.50f, 88f)
-    )
 }

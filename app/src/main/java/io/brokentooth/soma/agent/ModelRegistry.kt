@@ -93,6 +93,9 @@ object ModelRegistry {
 
             Log.d(TAG, "Gemini API returned ${parsed.models.size} total models")
 
+            val chatModels = parsed.models
+                .filter { "generateContent" in it.supportedGenerationMethods }
+
             val filtered = chatModels
                 .filter { !it.name.contains("embedding") }
                 .filter { !it.name.contains("aqa") }
