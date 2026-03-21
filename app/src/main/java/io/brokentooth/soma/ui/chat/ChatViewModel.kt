@@ -52,7 +52,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         id = "gemini-flash",
         displayName = "[Goo] Gemini 3.1 Flash (Direct)",
         provider = "gemini",
-        isFree = true,
+        isFree = false,
         contextLength = 1048576,
         ipdScore = 1000f // Keep it top
     )

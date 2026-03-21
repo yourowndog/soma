@@ -93,37 +93,30 @@ object ModelRegistry {
 
             Log.d(TAG, "Gemini API returned ${parsed.models.size} total models")
 
-            // Log all raw model names for debugging
-            parsed.models.forEach { model ->
-                Log.d(TAG, "  Gemini raw: ${model.name} methods=${model.supportedGenerationMethods}")
-            }
-
-            val chatModels = parsed.models
-                .filter { "generateContent" in it.supportedGenerationMethods }
-
-            Log.d(TAG, "Gemini: ${chatModels.size} support generateContent")
-
             val filtered = chatModels
                 .filter { !it.name.contains("embedding") }
                 .filter { !it.name.contains("aqa") }
                 .filter { !it.name.contains("tts") }
                 .filter { !it.name.contains("imagen") }
-                // Remove image-generation models (e.g. gemini-2.5-flash-image, gemini-3-pro-image-preview)
-                // These are not chat models — keep multimodal chat models which don't have "-image" suffix
                 .filter { !it.name.contains("-image") }
-                // Remove domain-specific non-chat models
                 .filter { !it.name.contains("robotics") }
                 .filter { !it.name.contains("computer-use") }
+                // Only keep Gemini 3.x series — old 1.5/2.0/2.5 culled
+                .filter { model ->
+                    val id = model.name.removePrefix("models/")
+                    id.startsWith("gemini-3.") || id.startsWith("gemini-3-")
+                }
 
-            Log.d(TAG, "Gemini: ${filtered.size} after filtering non-chat models")
+            Log.d(TAG, "Gemini: ${filtered.size} after filtering non-chat + old-gen")
 
             val result = filtered
                 .map { model ->
                     val modelId = model.name.removePrefix("models/")
                     ModelOption(
                         id = modelId,
-                        displayName = model.displayName.ifBlank { modelId },
-                        provider = "gemini"
+                        displayName = "[Goo] ${model.displayName.ifBlank { modelId }} (Direct)",
+                        provider = "gemini",
+                        isFree = false
                     )
                 }
                 .distinctBy { it.displayName }
@@ -136,8 +129,8 @@ object ModelRegistry {
 
 
     private fun fallbackGeminiModels() = listOf(
-        ModelOption("gemini-2.5-flash-preview-04-17", "[Goo] Gemini 2.5 Flash Preview", "gemini"),
-        ModelOption("gemini-2.5-pro-preview-05-06", "[Goo] Gemini 2.5 Pro Preview", "gemini"),
-        ModelOption("gemini-1.5-pro", "[Goo] Gemini 1.5 Pro", "gemini"),
+        ModelOption("gemini-3.1-flash-lite-preview", "[Goo] Gemini 3.1 Flash Lite (Direct)", "gemini", false),
+        ModelOption("gemini-3.1-flash-preview", "[Goo] Gemini 3.1 Flash (Direct)", "gemini", false),
+        ModelOption("gemini-3.1-pro-preview", "[Goo] Gemini 3.1 Pro (Direct)", "gemini", false),
     )
 }
