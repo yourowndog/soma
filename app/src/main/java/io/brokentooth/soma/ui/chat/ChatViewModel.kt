@@ -50,7 +50,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     val geminiModel = ModelOption(
         id = "gemini-flash",
-        displayName = "[Goo] Gemini 3.1 Flash (Direct)",
+        displayName = "[Goo] Gemini 3.1 Flash (Direct) ($0.50/$2.00)",
         provider = "gemini",
         isFree = false,
         contextLength = 1048576,

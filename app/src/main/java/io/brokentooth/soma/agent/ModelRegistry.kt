@@ -115,9 +115,17 @@ object ModelRegistry {
             val result = filtered
                 .map { model ->
                     val modelId = model.name.removePrefix("models/")
+                    // Determine approximate pricing for display (based on public API docs)
+                    val priceDisplay = when {
+                        modelId.contains("flash-lite") -> "($0.25/$1.50)"
+                        modelId.contains("flash") -> "($0.50/$2.00)"
+                        modelId.contains("pro") -> "($3.50/$10.50)"
+                        else -> "($0.50/$2.00)" // fallback
+                    }
+
                     ModelOption(
                         id = modelId,
-                        displayName = "[Goo] ${model.displayName.ifBlank { modelId }} (Direct)",
+                        displayName = "[Goo] ${model.displayName.ifBlank { modelId }} (Direct) $priceDisplay",
                         provider = "gemini",
                         isFree = false
                     )
@@ -132,8 +140,8 @@ object ModelRegistry {
 
 
     private fun fallbackGeminiModels() = listOf(
-        ModelOption("gemini-3.1-flash-lite-preview", "[Goo] Gemini 3.1 Flash Lite (Direct)", "gemini", false),
-        ModelOption("gemini-3.1-flash-preview", "[Goo] Gemini 3.1 Flash (Direct)", "gemini", false),
-        ModelOption("gemini-3.1-pro-preview", "[Goo] Gemini 3.1 Pro (Direct)", "gemini", false),
+        ModelOption("gemini-3.1-flash-lite-preview", "[Goo] Gemini 3.1 Flash Lite (Direct) ($0.25/$1.50)", "gemini", false),
+        ModelOption("gemini-3.1-flash-preview", "[Goo] Gemini 3.1 Flash (Direct) ($0.50/$2.00)", "gemini", false),
+        ModelOption("gemini-3.1-pro-preview", "[Goo] Gemini 3.1 Pro (Direct) ($3.50/$10.50)", "gemini", false),
     )
 }
