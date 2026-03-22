@@ -9,13 +9,12 @@ import io.brokentooth.soma.BuildConfig
 import io.brokentooth.soma.SomaApplication
 import io.brokentooth.soma.agent.ChatAgent
 import io.brokentooth.soma.agent.GeminiClient
+import io.brokentooth.soma.agent.KoogAgentManager
 import io.brokentooth.soma.agent.LlmProvider
 import io.brokentooth.soma.agent.ModelOption
 import io.brokentooth.soma.agent.ModelRegistry
-import io.brokentooth.soma.agent.OpenRouterClient
 import io.brokentooth.soma.data.model.Message
 import io.brokentooth.soma.data.model.Session
-import io.brokentooth.soma.tools.handleToolCalls
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -142,9 +141,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 apiKey = BuildConfig.GOOGLE_API_KEY,
                 modelId = model.id
             )
-            "openrouter" -> OpenRouterClient(
+            "openrouter" -> KoogAgentManager(
                 apiKey = BuildConfig.OPENROUTER_API_KEY,
-                modelId = model.id
+                modelId = model.id,
+                appContext = getApplication()
             )
             else -> throw IllegalArgumentException("Unknown provider: ${model.provider}")
         }
@@ -194,17 +194,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     Log.d("ChatViewModel", "Full response: $responseText")
                     commitAssistantMessage(responseText)
 
-                    // Check for tool calls in the response
-                    val toolResult = handleToolCalls(getApplication(), responseText)
-                    if (toolResult != null) {
-                        val toolMsg = Message(
-                            sessionId = currentSessionId,
-                            role = "system",
-                            content = toolResult
-                        )
-                        messageDao.insert(toolMsg)
-                        _uiState.update { it.copy(messages = it.messages + toolMsg) }
-                    }
+                    // Tool calls are now handled by Koog's agent loop internally.
+                    // The response we get here is the final text after all tool execution.
 
                     // Rename session after first exchange
                     if (_uiState.value.messages.size <= 2) {

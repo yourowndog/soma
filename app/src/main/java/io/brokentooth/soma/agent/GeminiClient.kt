@@ -91,11 +91,6 @@ class GeminiClient(
     }.flowOn(Dispatchers.IO)
 
     companion object {
-        const val SYSTEM_PROMPT = "You are SOMA, a helpful AI assistant. " +
-            "You have access to tools. To open an app, output [[OPEN_APP:package.name]]. " +
-            "Common packages: com.android.chrome (Chrome), com.google.android.gm (Gmail), " +
-            "com.google.android.apps.maps (Maps), com.android.settings (Settings), " +
-            "com.google.android.youtube (YouTube), com.google.android.dialer (Phone), " +
-            "com.google.android.apps.messaging (Messages)."
+        const val SYSTEM_PROMPT = "You are SOMA, a helpful AI assistant running on an Android phone."
     }
 }
