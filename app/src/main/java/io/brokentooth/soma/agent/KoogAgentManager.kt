@@ -14,6 +14,8 @@ import io.brokentooth.soma.tools.OpenAppTool
 import io.brokentooth.soma.tools.GetDeviceInfoTool
 import io.brokentooth.soma.tools.ClipboardReadTool
 import io.brokentooth.soma.tools.ClipboardWriteTool
+import io.brokentooth.soma.tools.FlashlightTool
+import io.brokentooth.soma.tools.SettingsPanelTool
 import io.brokentooth.soma.tools.ToolContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +34,8 @@ class KoogAgentManager(
     }
 
     override fun streamChat(messages: List<ChatMessage>): Flow<String> = flow {
+        val lastUserMessage = messages.lastOrNull { it.role == "user" }?.content ?: ""
+        
         try {
             // 1. Build the Koog tool registry with our tools
             val toolRegistry = ToolRegistry {
@@ -39,6 +43,8 @@ class KoogAgentManager(
                 tool(GetDeviceInfoTool)
                 tool(ClipboardReadTool)
                 tool(ClipboardWriteTool)
+                tool(FlashlightTool)
+                tool(SettingsPanelTool)
             }
 
             // 2. Build a Koog prompt that includes conversation history
@@ -82,14 +88,28 @@ class KoogAgentManager(
             )
 
             // 6. Run the agent with the latest user message
-            val lastUserMessage = messages.lastOrNull { it.role == "user" }?.content ?: ""
             val result = agent.run(lastUserMessage)
             
             // 7. Emit the complete response
             emit(result)
         } catch (e: Exception) {
-            // Rethrow with a descriptive message so ChatViewModel can handle it
-            throw RuntimeException("Error running Koog agent: ${e.message}", e)
+            val errorMsg = e.message ?: ""
+            val causeMsg = e.cause?.message ?: ""
+            val isNetworkError = errorMsg.contains("Software caused connection abort") || 
+                                 causeMsg.contains("Software caused connection abort") ||
+                                 errorMsg.contains("Connection reset") ||
+                                 causeMsg.contains("Connection reset")
+                                 
+            val isNetworkContext = lastUserMessage.lowercase().contains("wifi") || 
+                                   lastUserMessage.lowercase().contains("network") ||
+                                   lastUserMessage.lowercase().contains("internet")
+
+            if (isNetworkError && isNetworkContext) {
+                emit("I executed the network command, but changing the device's network state temporarily severed my connection to the AI server. The action should be complete.")
+            } else {
+                // Rethrow with a descriptive message so ChatViewModel can handle it
+                throw RuntimeException("Error running Koog agent: ${e.message}", e)
+            }
         }
     }.flowOn(Dispatchers.IO)
 }

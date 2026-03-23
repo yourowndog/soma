@@ -71,3 +71,35 @@ object ClipboardWriteTool : SimpleTool<ClipboardWriteTool.Args>(
         return writeClipboard(ToolContext.appContext, args.text)
     }
 }
+
+object FlashlightTool : SimpleTool<FlashlightTool.Args>(
+    argsSerializer = Args.serializer(),
+    name = "toggle_flashlight",
+    description = "Turn the device flashlight (camera flash) on or off"
+) {
+    @Serializable
+    data class Args(
+        @property:LLMDescription("Set to true to turn on, false to turn off")
+        val state: Boolean
+    )
+    
+    override suspend fun execute(args: Args): String {
+        return toggleFlashlight(ToolContext.appContext, args.state)
+    }
+}
+
+object SettingsPanelTool : SimpleTool<SettingsPanelTool.Args>(
+    argsSerializer = Args.serializer(),
+    name = "open_settings_panel",
+    description = "Open a specific Android settings panel (e.g. wifi, bluetooth, display, sound, apps, battery, location)"
+) {
+    @Serializable
+    data class Args(
+        @property:LLMDescription("The name of the settings panel to open (e.g. 'wifi', 'bluetooth', 'display')")
+        val panel: String
+    )
+    
+    override suspend fun execute(args: Args): String {
+        return openSettingsPanel(ToolContext.appContext, args.panel)
+    }
+}

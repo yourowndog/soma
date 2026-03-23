@@ -4,10 +4,12 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.hardware.camera2.CameraManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 
 private const val TAG = "DeviceTools"
@@ -331,5 +333,53 @@ fun writeClipboard(context: Context, text: String): String {
     } catch (e: Exception) {
         Log.e(TAG, "Error writing to clipboard", e)
         return "Error writing to clipboard: ${e.message}"
+    }
+}
+
+fun toggleFlashlight(context: Context, state: Boolean): String {
+    return try {
+        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val cameraId = cameraManager.cameraIdList.firstOrNull { id ->
+            cameraManager.getCameraCharacteristics(id).get(android.hardware.camera2.CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+        }
+        
+        if (cameraId != null) {
+            cameraManager.setTorchMode(cameraId, state)
+            val stateStr = if (state) "on" else "off"
+            Log.i(TAG, "Turned flashlight $stateStr")
+            "Turned flashlight $stateStr"
+        } else {
+            Log.w(TAG, "No flashlight available on device")
+            "No flashlight available on this device."
+        }
+    } catch (e: Exception) {
+        Log.e(TAG, "Error toggling flashlight", e)
+        "Error toggling flashlight: ${e.message}"
+    }
+}
+
+fun openSettingsPanel(context: Context, panel: String): String {
+    return try {
+        val action = when (panel.lowercase()) {
+            "wifi" -> Settings.ACTION_WIFI_SETTINGS
+            "bluetooth" -> Settings.ACTION_BLUETOOTH_SETTINGS
+            "display" -> Settings.ACTION_DISPLAY_SETTINGS
+            "sound", "volume" -> Settings.ACTION_SOUND_SETTINGS
+            "apps" -> Settings.ACTION_APPLICATION_SETTINGS
+            "battery" -> Settings.ACTION_BATTERY_SAVER_SETTINGS
+            "location" -> Settings.ACTION_LOCATION_SOURCE_SETTINGS
+            "accessibility" -> Settings.ACTION_ACCESSIBILITY_SETTINGS
+            else -> Settings.ACTION_SETTINGS
+        }
+        
+        val intent = Intent(action).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+        Log.i(TAG, "Opened settings panel: $panel")
+        "Opened $panel settings"
+    } catch (e: Exception) {
+        Log.e(TAG, "Error opening settings panel: $panel", e)
+        "Error opening $panel settings: ${e.message}"
     }
 }
