@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_run": "2026-03-24T18:58:56.479890Z",
+    "root": "/home/sam/projects/soma",
+    "include_patterns": [
+      "app/src/**/*.kt",
+      "app/src/**/*.kts",
+      "*.gradle.kts"
+    ],
+    "exclude_patterns": [
+      "**/build/**",
+      "**/androidTest/**",
+      "**/test/**"
+    ],
+    "exceptions": []
+  },
+  "file_hashes": {
+    "app/build.gradle.kts": "52b5f9a8fa2829432a0cd888f3c4cc26",
+    "app/src/main/java/io/brokentooth/soma/MainActivity.kt": "5e09d3229016eb15e662f7c68e338a60",
+    "app/src/main/java/io/brokentooth/soma/SomaApplication.kt": "c14404dc7cc00e407ae3ed15a2008324",
+    "app/src/main/java/io/brokentooth/soma/agent/AnthropicClient.kt": "61d0105bbbd10f5e86da42118ec883e6",
+    "app/src/main/java/io/brokentooth/soma/agent/ChatAgent.kt": "f91a1172438e70a453ac65e425352052",
+    "app/src/main/java/io/brokentooth/soma/agent/GeminiClient.kt": "56db6f820cf97467dc877e83bfd8586e",
+    "app/src/main/java/io/brokentooth/soma/agent/KoogAgentManager.kt": "78ab73cd8f72170fb7091d0ffefd3caa",
+    "app/src/main/java/io/brokentooth/soma/agent/LlmProvider.kt": "b582ef6c4cb2e4957d8b096104193a74",
+    "app/src/main/java/io/brokentooth/soma/agent/ModelRegistry.kt": "45f8440fa7928a97c70338e3388f392f",
+    "app/src/main/java/io/brokentooth/soma/agent/OpenRouterClient.kt": "aa02c0c3c787e43d6c20e5fc2a283ef2",
+    "app/src/main/java/io/brokentooth/soma/agent/OpenRouterModels.kt": "79738002efeb134f7aabf2158f31c0e8",
+    "app/src/main/java/io/brokentooth/soma/data/db/MessageDao.kt": "13b45c943da619db1608759e8082411b",
+    "app/src/main/java/io/brokentooth/soma/data/db/SessionDao.kt": "2797f315550eb46f75b669832838d519",
+    "app/src/main/java/io/brokentooth/soma/data/db/SomaDatabase.kt": "ee5d0720ae014c3c2f25b81619251bc0",
+    "app/src/main/java/io/brokentooth/soma/data/model/Message.kt": "96e583c5823320ecd52d23822c41802c",
+    "app/src/main/java/io/brokentooth/soma/data/model/Session.kt": "e7859ae95f1abd1358aeba5903e5b820",
+    "app/src/main/java/io/brokentooth/soma/tools/DeviceTools.kt": "5bb7ce1bc057acfe5b00ec900f436679",
+    "app/src/main/java/io/brokentooth/soma/tools/OpenAppTool.kt": "1dfde5eb05ecf6bf80a9d6e3022f4be5",
+    "app/src/main/java/io/brokentooth/soma/tools/Scratch.kt": "11fbf305149bfab2a72e1148509b7662",
+    "app/src/main/java/io/brokentooth/soma/tools/SomaTools.kt": "5b8bc93a6ac82479c4519ca3b4eeda8b",
+    "app/src/main/java/io/brokentooth/soma/ui/chat/ChatInput.kt": "59e5b5fa8484759a7e1cd48b0d99e266",
+    "app/src/main/java/io/brokentooth/soma/ui/chat/ChatScreen.kt": "8b4b8bb46fad8228bf23d26cec5934e8",
+    "app/src/main/java/io/brokentooth/soma/ui/chat/ChatViewModel.kt": "0b47356179f2104c3644f336c446d01f",
+    "app/src/main/java/io/brokentooth/soma/ui/chat/MessageBubble.kt": "6d8d9e6dd5ce73970f32e50841dc40bc",
+    "app/src/main/java/io/brokentooth/soma/ui/chat/ModelSelectorSheet.kt": "5145f985ece337a6c9d782b196663859",
+    "app/src/main/java/io/brokentooth/soma/ui/theme/Colors.kt": "7d658244a20a962085bcfec8b8d8fa61",
+    "app/src/main/java/io/brokentooth/soma/ui/theme/Theme.kt": "fe495a2cc113ee701e6d7087ab8ccdf5",
+    "app/src/main/java/io/brokentooth/soma/ui/theme/Type.kt": "b4b5894bb41976e1b1310f80d1b17346",
+    "build.gradle.kts": "f675e5c2b7de3146a5b43f34842e090e",
+    "settings.gradle.kts": "3aee2593985cfce695b4e65b019b7ebd"
+  },
+  "folder_hashes": {
+    "app/src/main/java/io/brokentooth/soma/data/model": "c08ff54b8f9febc2b4d2dcbb17fbe7cd",
+    "app/src/main/java/io/brokentooth/soma/ui": "100852bf50279550f52be94c63124544",
+    "app/src/main/java/io/brokentooth/soma/ui/theme": "3d8bccc9af7e15c008d268e56a5aaf3e",
+    "app": "b8acdae145586cdb6ec20c90f368b716",
+    "app/src/main/java/io/brokentooth/soma/data/db": "d076fff5a2cc460c03567243430753f3",
+    ".": "79f180641b92a6e1943173571afa87bd",
+    "app/src/main/java/io": "c9dc5b8104aa93a81cbca5df670f36d9",
+    "app/src/main": "c9dc5b8104aa93a81cbca5df670f36d9",
+    "app/src/main/java/io/brokentooth/soma/agent": "c3d4f8b74e070e3333c0cdf42c567d76",
+    "app/src/main/java/io/brokentooth/soma/tools": "ec596eb8bc00de1abf0fc1a6f88906ac",
+    "app/src/main/java/io/brokentooth/soma/data": "d92b5388f2d60cd0d6690489afc71985",
+    "app/src/main/java/io/brokentooth/soma/ui/chat": "729ca165c26915081009582203b27de1",
+    "app/src/main/java/io/brokentooth/soma": "c9dc5b8104aa93a81cbca5df670f36d9",
+    "app/src/main/java": "c9dc5b8104aa93a81cbca5df670f36d9",
+    "app/src/main/java/io/brokentooth": "c9dc5b8104aa93a81cbca5df670f36d9",
+    "app/src": "c9dc5b8104aa93a81cbca5df670f36d9"
+  }
+}

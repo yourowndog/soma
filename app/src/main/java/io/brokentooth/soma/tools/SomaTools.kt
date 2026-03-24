@@ -4,6 +4,7 @@ import ai.koog.agents.core.tools.SimpleTool
 import ai.koog.agents.core.tools.annotations.LLMDescription
 import android.content.Context
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.serializer
 
 /** Holds the Android application context for tool execution. Set before running any agent. */
 object ToolContext {
@@ -13,9 +14,8 @@ object ToolContext {
         appContext = context.applicationContext
     }
 }
-
 object OpenAppTool : SimpleTool<OpenAppTool.Args>(
-    argsSerializer = Args.serializer(),
+    argsSerializer = serializer<Args>(),
     name = "open_app",
     description = "Opens an Android app. You can pass either a package name (e.g. com.android.chrome) or an app name (e.g. 'messages', 'chrome', 'settings'). If the exact package isn't found, it searches installed apps by name. Common packages: com.android.chrome (Chrome), com.google.android.gm (Gmail), com.google.android.apps.maps (Maps), com.android.settings (Settings), com.google.android.youtube (YouTube)"
 ) {
@@ -31,7 +31,7 @@ object OpenAppTool : SimpleTool<OpenAppTool.Args>(
 }
 
 object GetDeviceInfoTool : SimpleTool<GetDeviceInfoTool.Args>(
-    argsSerializer = Args.serializer(),
+    argsSerializer = serializer<Args>(),
     name = "get_device_info",
     description = "Get device information including battery level, charging status, network connectivity, and device model"
 ) {
@@ -44,7 +44,7 @@ object GetDeviceInfoTool : SimpleTool<GetDeviceInfoTool.Args>(
 }
 
 object ClipboardReadTool : SimpleTool<ClipboardReadTool.Args>(
-    argsSerializer = Args.serializer(),
+    argsSerializer = serializer<Args>(),
     name = "clipboard_read",
     description = "Read the current text from the device clipboard"
 ) {
@@ -57,7 +57,7 @@ object ClipboardReadTool : SimpleTool<ClipboardReadTool.Args>(
 }
 
 object ClipboardWriteTool : SimpleTool<ClipboardWriteTool.Args>(
-    argsSerializer = Args.serializer(),
+    argsSerializer = serializer<Args>(),
     name = "clipboard_write",
     description = "Write text to the device clipboard"
 ) {
@@ -73,7 +73,7 @@ object ClipboardWriteTool : SimpleTool<ClipboardWriteTool.Args>(
 }
 
 object FlashlightTool : SimpleTool<FlashlightTool.Args>(
-    argsSerializer = Args.serializer(),
+    argsSerializer = serializer<Args>(),
     name = "toggle_flashlight",
     description = "Turn the device flashlight (camera flash) on or off"
 ) {
@@ -89,7 +89,7 @@ object FlashlightTool : SimpleTool<FlashlightTool.Args>(
 }
 
 object SettingsPanelTool : SimpleTool<SettingsPanelTool.Args>(
-    argsSerializer = Args.serializer(),
+    argsSerializer = serializer<Args>(),
     name = "open_settings_panel",
     description = "Open a specific Android settings panel (e.g. wifi, bluetooth, display, sound, apps, battery, location)"
 ) {
