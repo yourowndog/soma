@@ -1,6 +1,9 @@
 # SOMA - Android Native Agentic Assistant
 ## Agent Instructions and Conventions
 
+> **URGENT / CLUSTER ECOSYSTEM INFO:**
+> All comprehensive documentation regarding the Brokentooth cluster, nodes (like Icarion, Titan, Pyrrhus), and network topology is centrally located at `/shared/cluster-specs/`. Check this directory first to understand the ecosystem without needing to do deep research.
+
 ### 1. The SOMA Mission: Native Embodiment
 SOMA is a native Android agentic assistant. We are building what OpenClaw would be if designed for Android from Day 1.
 - **Native over Termux:** We reject sandbox hacks (PROOT, janky wrappers). We use native Intents, Activities, and OS-level integrations.
@@ -10,22 +13,22 @@ SOMA is a native Android agentic assistant. We are building what OpenClaw would 
 When operating in SOMA, all agents MUST follow the Knowledge Priority:
 1.  **"OpenClaw Android" Notebook (ID: `77879ef9-a510-4e01-a104-98de305c5fbe`):** Query this FIRST via NotebookLM MCP for any questions about OpenClaw's logic or Android manifests.
 2.  **"Open Router Models" Notebook (ID: `5fe98786-e4f5-4e8c-8932-1add446f4546`):** Query this to determine the best model for a specific task, verify pricing, or assess model qualities/vibes.
-3.  **Local Context:** Use `jcodemunch` and `sams-custom-kotlin-mcp` to map the `soma` project.
+3.  **Local Context:** Use `jcodemunch` and `master-lsp-mcp` to map the `soma` project.
 4.  **External Web:** Only use `websearch` if the notebooks and local context do not provide the answer.
 
 ### 3. Tooling & Navigation (CRITICAL - SCORCHED EARTH POLICY)
 - **Code Navigation:** ALWAYS use `jcodemunch` tools for fast, global codebase navigation.
-- **Kotlin LSP Sovereignty:** ALL Kotlin-specific analysis, diagnostics, and lookups MUST use `sams-custom-kotlin-mcp`.
+- **Kotlin LSP Sovereignty:** ALL Kotlin-specific analysis, diagnostics, and lookups MUST use `master-lsp-mcp`.
 - **FORBIDDEN TOOLS:** NEVER, UNDER ANY CIRCUMSTANCES, use the native OpenCode LSP tools (`lsp`, `lsp_diagnostics`, `lsp_goto_definition`, etc.). They are HARD-CODED FAILURE POINTS that will hang the agent indefinitely.
-- **Verification:** After EVERY edit, run `sams-custom-kotlin-mcp_diagnostics`.
+- **Verification:** After EVERY edit, run `master-lsp-mcp_diagnostics`.
 
 **Sovereign Kotlin Toolchain:**
-- `sams-custom-kotlin-mcp_goToDefinition`
-- `sams-custom-kotlin-mcp_findReferences`
-- `sams-custom-kotlin-mcp_hover`
-- `sams-custom-kotlin-mcp_diagnostics` (The ONLY diagnostic tool permitted)
-- `sams-custom-kotlin-mcp_rename`
-- `sams-custom-kotlin-mcp_documentSymbol`
+- `master-lsp-mcp_goToDefinition`
+- `master-lsp-mcp_findReferences`
+- `master-lsp-mcp_hover`
+- `master-lsp-mcp_diagnostics` (The ONLY diagnostic tool permitted)
+- `master-lsp-mcp_rename`
+- `master-lsp-mcp_documentSymbol`
 
 **Execution Prohibition List (System Hang Risks):**
 - `lsp`
