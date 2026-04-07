@@ -1,74 +1,58 @@
-# SOMA - Android Native Agentic Assistant
-## Agent Instructions and Conventions
-
 > **URGENT / CLUSTER ECOSYSTEM INFO:**
-> All comprehensive documentation regarding the Brokentooth cluster, nodes (like Icarion, Titan, Pyrrhus), and network topology is centrally located at `/shared/cluster-specs/`. Check this directory first to understand the ecosystem without needing to do deep research.
+> All comprehensive documentation regarding the Brokentooth cluster, nodes (like Icarion, Titan, Pyrrhus), and network topology is centrally located at `/shared/cluster-specs/` (symlinked at `~/cluster-specs`). Check this directory first to understand the ecosystem without needing to do deep research.
 
-### 1. The SOMA Mission: Native Embodiment
-SOMA is a native Android agentic assistant. We are building what OpenClaw would be if designed for Android from Day 1.
-- **Native over Termux:** We reject sandbox hacks (PROOT, janky wrappers). We use native Intents, Activities, and OS-level integrations.
-- **Verbal Sovereignty:** The goal is a system where a user can control and customize every facet of their Android device through natural conversation.
+# AGENTS.md — SOMA (Android-Native Agentic Assistant)
 
-### 2. Knowledge Protocol (NotebookLM)
-When operating in SOMA, all agents MUST follow the Knowledge Priority:
-1.  **"OpenClaw Android" Notebook (ID: `77879ef9-a510-4e01-a104-98de305c5fbe`):** Query this FIRST via NotebookLM MCP for any questions about OpenClaw's logic or Android manifests.
-2.  **"Open Router Models" Notebook (ID: `5fe98786-e4f5-4e8c-8932-1add446f4546`):** Query this to determine the best model for a specific task, verify pricing, or assess model qualities/vibes.
-3.  **Local Context:** Use `jcodemunch` and `master-lsp-mcp` to map the `soma` project.
-4.  **External Web:** Only use `websearch` if the notebooks and local context do not provide the answer.
+## 1. Research Sovereignty: NotebookLM Hub
+**DO NOT search the open web for OpenClaw or SOMA architectural details.** The most current, technically dense, and project-specific research is sequestered in your NotebookLM MCP. 
 
-### 3. Tooling & Navigation (CRITICAL - SCORCHED EARTH POLICY)
-- **Code Navigation:** ALWAYS use `jcodemunch` tools for fast, global codebase navigation.
-- **Kotlin LSP Sovereignty:** ALL Kotlin-specific analysis, diagnostics, and lookups MUST use `master-lsp-mcp`.
-- **FORBIDDEN TOOLS:** NEVER, UNDER ANY CIRCUMSTANCES, use the native OpenCode LSP tools (`lsp`, `lsp_diagnostics`, `lsp_goto_definition`, etc.). They are HARD-CODED FAILURE POINTS that will hang the agent indefinitely.
-- **Verification:** After EVERY edit, run `master-lsp-mcp_diagnostics`.
+**MANDATE:** You MUST query the relevant NotebookLM workspace via `mcp_notebooklm_notebook_query` before proposing any architectural changes.
 
-**Sovereign Kotlin Toolchain:**
-- `master-lsp-mcp_goToDefinition`
-- `master-lsp-mcp_findReferences`
-- `master-lsp-mcp_hover`
-- `master-lsp-mcp_diagnostics` (The ONLY diagnostic tool permitted)
-- `master-lsp-mcp_rename`
-- `master-lsp-mcp_documentSymbol`
+### Research Table of Contents
+| Prefix | Workspace Name | Use Case / Search Here For... |
+| :--- | :--- | :--- |
+| **[CORE]** | `OpenClaw: Gateway & Agent Loop` | `pi-mono` runtime, Think-Act-Observe cycle, `SOUL.md` rules. |
+| **[CORE]** | `OpenClaw: Persistence & RAG` | SQLite schemas, "Dreaming" protocols, context compaction. |
+| **[CORE]** | `OpenClaw: Routing & Providers` | Fallback logic, Provider npm packages, Tool calling syntax. |
+| **[FRAMEWORK]** | `Koog AI (Kotlin/KMP)` | FSM Graphs, GOAP planning, KMP performance & interceptors. |
+| **[AOSP]** | `Native Android System Hooks` | Binder IPC, Accessibility Services, "Phantom Killer" workarounds. |
+| **[VOICE]** | `Low-Latency Speech Pipeline` | Wake words (Picovoice), STT/TTS benchmarks, semantic endpointing. |
+| **[UI]** | `OpenClaw: Android Mission Control` | Jetpack Compose patterns, OpenTelemetry traces, background wake-locks. |
+| **[EXT]** | `OpenClaw: MCP & Tool Security` | Tool discovery, Stdio/HTTP transport, Landlock isolation. |
+| **[GATEWAY]** | `OpenRouter & Model Tiers` | API limits, model rankings, cost-per-token comparisons. |
 
-**Execution Prohibition List (System Hang Risks):**
-- `lsp`
-- `lsp_diagnostics`
-- `lsp_goto_definition`
-- `lsp_find_references`
-- `lsp_rename`
-- `lsp_goToImplementation`
-- `lsp_prepareCallHierarchy`
-- `lsp_incomingCalls`
-- `lsp_outgoingCalls`
+## 2. Tooling Sovereignty: LSP via MCP Bridge
+**master-lsp-mcp** is the unified MCP bridge binary. It MUST be used for all code navigation and diagnostics. DO NOT use native/hard-coded LSP tools.
 
-### 4. Orchestration & Delegation (The Megazord Protocol)
-- **The Orchestrator:** Acts as the "Head." It must use `sequential_thinking` to aggregate Kotlin/Koog usage patterns before delegating. No sub-agent moves without the Head's command.
-- **Resilience:** If any model hits a limit or fails, the operation MUST pause. The Orchestrator will use the "Open Router Models" notebook to pivot and resolve.
+**MCP LSP Tools:**
+- `opencode-ts_*` — TypeScript/TSX
+- `opencode-html_*` — HTML/Vue
+- `opencode-sql_*` — SQL
+- `opencode-go_*` — Go
 
-### 5. Build, Test, and Lint Commands
-This is a standard Android Gradle project. All commands should be run from the root directory (`/home/sam/projects/soma`) using the Gradle wrapper (`./gradlew`).
-- **Language:** Kotlin (JVM Target 17).
-- **UI:** Jetpack Compose (Material 3).
-- **Database:** Room (SQLite) for memory and session persistence.
-- **Networking/HTTP:** Ktor Client (`ktor-client-okhttp`).
-- **Async/Concurrency:** Kotlin Coroutines and Flows (heavy use of `Flow<String>` for LLM streaming).
-- **Core Agent Framework:** Koog Agent Framework (`ai.koog:koog-agents`).
+## 3. Code Intelligence: jcodemunch & jdocmunch
+**ALWAYS prefer jcodemunch/jdocmunch over raw grep/glob.**
 
-### 4. Code Style & Conventions
-- **Formatting:** Follow standard Android Studio Kotlin formatting conventions.
-- **Naming:**
-  - Classes/Interfaces: `PascalCase`
-  - Functions/Variables: `camelCase`
-  - Constants (const val): `UPPER_SNAKE_CASE`
-- **Imports:** Avoid wildcard imports (e.g., `import io.brokentooth.soma.*`). Explicitly import required classes.
-- **Immutability:** Prefer `val` over `var` wherever possible. Use immutable collections (`List`, `Map`) unless mutability is explicitly required (`MutableList`).
-- **Nullability:** Avoid `!!` (not-null assertions) unless strictly necessary. Use safe calls (`?.`) and Elvis operators (`?:`) for safe null handling.
-- **State Management (Compose):** Use `ViewModel` to hold state. Expose state to Compose via `StateFlow` collected as State in the UI.
-- **Data Layer:** Access the database exclusively through DAOs (`MessageDao`, `SessionDao`). Do not pass DAOs directly into Compose UI; route through ViewModels or Repositories.
-- **Error Handling:** Use standard `try-catch` blocks for network and database operations. For UI-facing errors, surface them via state in the ViewModel rather than crashing the app.
-- **Comments:** Keep comments concise and focused on *why* something is done, not *what*. Code should be self-documenting. Use standard KDoc (`/** ... */`) for public APIs and complex classes.
+**jcodemunch** (code indexing):
+- `jcodemunch_index_folder` — index a local codebase (**DO THIS FIRST** on project roots!)
+- `jcodemunch_search_symbols` — find functions, classes, methods by name/signature
+- `jcodemunch_get_file_outline` — get all symbols in a file
+- `jcodemunch_get_symbol` — get full source of a symbol
+- `jcodemunch_find_references` — find usages of an identifier
 
-### 5. Modification Rules
-- Do not introduce new third-party libraries into `build.gradle.kts` without explicit user permission.
-- Ensure that any new strings are added to `strings.xml` if creating highly polished UI, though hardcoded strings are acceptable during rapid prototyping unless specified otherwise.
-- When working with the Koog Agent loop, ensure the history maintains the generic `ChatMessage` format.
+## 4. Project Vision & Architecture
+SOMA leverages the **Koog Agent Framework** to replace standalone automation apps by centralizing wake-word detection, screen reading, and device control into a persistent foreground service (`SomaService`).
+
+### Key Knowledge Base
+- **`SomaArchitecture.md`**: Definitive UI and architectural specification.
+- **`SOMA_Master_Index.md`**: Tracks the status of each build phase.
+- **`Soma prompts/`**: Specific implementation guides for each phase. **Read the relevant phase prompt before starting work.**
+
+## 5. Development Conventions
+- **Asynchrony:** Use Kotlin Coroutines and Flow for all operations.
+- **Permissions:** Be mindful of Android runtime permissions (RECORD_AUDIO, ACCESSIBILITY).
+- **Tools:** Register all new capabilities in `ToolRegistry.kt`. Prefer native function calling over string parsing.
+- **Aesthetic:** Dark theme, `#0D1117` background, JetBrains Mono for code.
+
+## 6. Sub-Agent Protocol
+When tasking sub-agents, enforce the use of the specific NotebookLM workspaces listed above. Every handoff MUST include a reference to the specific [PREFIX] notebook consulted.
